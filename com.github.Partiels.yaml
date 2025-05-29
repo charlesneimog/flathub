@@ -1,0 +1,42 @@
+app-id: com.github.Partiels
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: Partiels
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  # MuseScore.com connectivity
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=cups
+  - --device=dri
+  # Allow loading/saving files from anywhere
+  # (portals don’t work yet)
+  - --filesystem=home
+  # Allow other instances to see lockfiles
+  - --env=TMPDIR=/var/tmp
+  - --filesystem=xdg-run/pipewire-0
+modules:
+  - name: Partiels
+    sources:
+      - type: git
+        url: https://github.com/Ircam-Partiels/Partiels.git
+        commit: bb9bb1ae2f4b1754661757c8f7c826361b78e076
+      - type: git
+        url: https://github.com/vamp-plugins/vamp-plugin-sdk.git
+        commit: d7ceb7d1d490674c93d334e5378108c4328e9e05
+        dest: ./vamp-plugin-sdk
+    buildsystem: simple
+    build-commands:
+      - cd vamp-plugin-sdk && patch -p1 < ./../BinaryData/Resource/vamp-plugin-sdk-src.patch
+      - cmake . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DVAMP_SDK_PATH=./vamp-plugin-sdk
+      - cmake --build build -j4
+      - cd ./build/Partiels && ls -la 
+    post-install:
+      - mkdir -p /app/bin
+      - install -Dm755 ./build/Partiels/Partiels /app/bin/Partiels
+      - install -Dm644 ./build/Partiels/Partiels.desktop /app/share/applications/com.github.Partiels.desktop
+      - install -Dm644 ./build/Partiels/icon.png /app/share/icons/hicolor/256x256/apps/com.github.Partiels.png
+
+
